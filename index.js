@@ -167,45 +167,44 @@ function addRole() {
     });
 };
 function updateRole() {
-    let query = "SELECT DISTINCT employee1.id, employee1.first_name, employee1.last_name, role1.title AS Job_Title, ";
+    let query = "SELECT DISTINCT employee1.id, concat(employee1.first_name,' ', employee1.last_name) AS Employee_Name, role1.title AS Job_Title, ";
     query += "department1.name AS Department, role1.salary, manager1.first_name, manager1.last_name FROM employee employee1 ";
-    query += "LEFT JOIN role role1 ON role1.id = employee1.role_id LEFT JOIN department department1 ON role1.department_id = department1.id LEFT JOIN employee manager1 ";
-    query += "ON employee1.manager_id = manager1.id LEFT JOIN employee employee2 ON role1.id = employee2.role_id ORDER BY id";
+    query += "INNER JOIN role role1 ON role1.id = employee1.role_id INNER JOIN department department1 ON role1.department_id = department1.id LEFT JOIN employee manager1 ";
+    query += "ON employee1.manager_id = manager1.id INNER JOIN employee employee2 ON role1.id = employee2.role_id ORDER BY id";
 
     connection.query(query, (err, data) => {
         if (err) throw err;
-        let employeeN = [];
-        let roleN = []; 
+        let employees = [];
+        let roles = [];
+
         inquirer.prompt([
             {
                 name: "updateEmployee",
-                message: "Which employee's role you would like to update?",
-                type: "rawlist",
+                message: "Which employee would you like to update?",
+                type: "list",
                 choices: function() {
-                    for (let i = 0; i < data.length; i++){
-                        employeeN.push(data[i].Employee);                        
+                    for (let i = 0; i < data.length; i++) {
+                        employees.push([data[i].Employee_Name]);    
                     }
-                    return employeeN;
+                    console.log(employees);
+                    return employees;
                 }                
             },
             {
                 name:"updateRole",
-                message: "Please choose a new role",
-                type: "rawlist",
+                message: "Please choose an employee's new role",
+                type: "list",
                 choices : function() {
-                    for (let i = 0; i < data.length; i++){
-                        roleN.push(data[i].Job_Title)
+                    for (let i = 0; i < data.length; i++) {
+                        roles.push(data[i].Job_Title);
                     }
-                    return roleN;
+                    return roles;
                 }               
             }
         ])
         .then(response => {
             connection.query("UPDATE role SET title = ? where id = ?", 
-                [
-                response.updateRole, 
-                employeeN.indexOf(response.updateEmployee)+1
-                ]);
+                [response.updateRole, employees.indexOf(response.updateEmployee)+1]);
             questions();
         })
    })
@@ -264,10 +263,12 @@ function removeEmployee() {
 
     connection.query(query, (err, data) => {
         if (err) throw err;
+
         let employeeArray = [];
-        for(i = 0; i < data.length; i++){
+        for(i = 0; i < data.length; i++) {
             let employeeToDel = {
-                name: data[i].name,
+                first_name: data[i].first_name,
+                last_name: data[i].last_name,
                 value: data[i].id
             }
             employeeArray.push(employeeToDel);
